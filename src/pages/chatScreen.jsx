@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Sidebar from '../components/Sidebar';
 import ChatHeader from '../components/ChatHeader';
@@ -8,31 +8,77 @@ import { socket } from '../socket/socket';
 import { getMessage } from '../services/messageService';
 import { getUserDetails } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
+import ProfileModal from '../components/ProfileModal';
 
 const ChatScreen = () => {
     const navigate = useNavigate()
+    const messagesContainerRef = useRef()
     const [selectedChat, setSelectedChat] = useState(null);
     const [messages, setMessages] = useState([]);
     const [userDetails, setUserDetails] = useState({})
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
 
     useEffect(() => {
-        socket.connect();
-
-        socket.on("connect", () => {
-            console.log("Connected");
-            console.log(socket.id);
-        });
-        getloginUserDetails()
-        return () => {
-            socket.off("connect");
-            socket.disconnect();
+        socket.auth = {
+            token: localStorage.getItem("userToken")
         };
-    }, [])
-    
+        socket.connect();
+        socket.on("connect", () => {
+            console.log(socket.id);
+
+        });
+
+        getloginUserDetails();
+
+        return () => {
+
+            socket.off("connect");
+
+            socket.disconnect();
+
+        };
+
+    }, []);
+
+
     useEffect(() => {
-        if (!selectedChat) return
-        getMssageforthisuser()
-    }, [selectedChat])
+
+        if (!selectedChat) return;
+
+        setMessages([]);
+
+        socket.emit("join-room", selectedChat.chatId);
+
+        getMessagesForChat();
+
+    }, [selectedChat]);
+
+
+    useEffect(() => {
+
+        const handleReceiveMessage = (newMessage) => {
+
+            if (newMessage.chatId !== selectedChat?.chatId) return;
+
+            setMessages((prev) => [...prev, newMessage]);
+
+        };
+
+        socket.on("receive-message", handleReceiveMessage);
+
+        return () => {
+            socket.off("receive-message", handleReceiveMessage);
+        };
+
+    }, [selectedChat]);
+
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop =
+                messagesContainerRef.current.scrollHeight;
+        }
+    }, [messages]);
+
 
     const getloginUserDetails = async () => {
         try {
@@ -48,7 +94,7 @@ const ChatScreen = () => {
             navigate("/");
         }
     };
-    const getMssageforthisuser = async () => {
+    const getMessagesForChat = async () => {
         try {
             const res = await getMessage(selectedChat.chatId)
             setMessages(res.data)
@@ -70,9 +116,22 @@ const ChatScreen = () => {
                     WeChat
                 </h1>
 
-                <span className="text-white">
-                    Sibajit
-                </span>
+                <div className="relative">
+
+                    <div
+                        onClick={() => setIsProfileOpen((prev) => !prev)}
+                        className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-semibold cursor-pointer hover:bg-blue-500 transition-all"
+                    >
+                        {userDetails?.name?.charAt(0).toUpperCase()}
+                    </div>
+
+                    <ProfileModal
+                        isOpen={isProfileOpen}
+                        onClose={() => setIsProfileOpen(false)}
+                        user={userDetails}
+                    />
+
+                </div>
 
             </header>
 
@@ -84,12 +143,13 @@ const ChatScreen = () => {
 
                 <section className="flex-1 flex flex-col">
 
-                    <ChatHeader 
-                    selectedChat={selectedChat}
+                    <ChatHeader
+                        selectedChat={selectedChat}
                     />
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4">
-
+                    <div
+                        ref={messagesContainerRef}
+                        className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"                    >
                         {messages.map(
                             (msg) => (
                                 <MessageBubble
@@ -106,7 +166,9 @@ const ChatScreen = () => {
 
                     </div>
 
-                    <MessageInput />
+                    <MessageInput
+                        selectedChat={selectedChat}
+                    />
 
                 </section>
 

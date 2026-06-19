@@ -1,6 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { socket } from '../socket/socket';
 
 const ChatHeader = ({ selectedChat }) => {
+
+    useEffect(() => {
+        let timer;
+
+        const handleTyping = () => {
+            setIsTyping(true);
+
+            clearTimeout(timer);
+
+            timer = setTimeout(() => {
+                setIsTyping(false);
+            }, 2000);
+        };
+
+        socket.on("user-typing", handleTyping);
+
+        return () => {
+            socket.off("user-typing", handleTyping);
+            clearTimeout(timer);
+        };
+    }, []);
+
+    useEffect(() => {
+        setIsTyping(false)
+    }, selectedChat)
+
+    const [isTyping, setIsTyping] = useState(false)
+
+
     return (
         <div className="h-16 border-b border-blue-500/30 flex items-center px-6">
 
@@ -14,9 +44,16 @@ const ChatHeader = ({ selectedChat }) => {
                     {selectedChat?.name || "Select a chat"}
                 </h2>
 
-                <p className="text-green-400 text-xs">
-                    Online
-                </p>
+
+                {isTyping ? (
+                    <p className="text-blue-400 text-xs animate-pulse">
+                        Typing...
+                    </p>
+                ) : (
+                    <p className="text-green-400 text-xs">
+                        Online
+                    </p>
+                )}
 
             </div>
 
