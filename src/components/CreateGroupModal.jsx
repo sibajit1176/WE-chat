@@ -44,7 +44,7 @@ const CreateGroupModal = ({
 
         onCreateGroup({
             groupName,
-            members: selectedUsers
+            userIds: selectedUsers
         });
 
         setGroupName("");

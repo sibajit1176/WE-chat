@@ -149,23 +149,29 @@ const ChatScreen = () => {
 
                     <div
                         ref={messagesContainerRef}
-                        className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide"                    >
-                        {messages.map(
-                            (msg) => (
+                        className="flex-1 overflow-y-auto p-6 space-y-2 scrollbar-hide"
+                    >
+                        {messages.map((msg) => {
+
+                            const isOwn = msg.userId === userDetails.id;
+
+                            return (
                                 <MessageBubble
                                     key={msg.messageId}
-                                    message={
-                                        msg.message
+                                    message={msg.message}
+                                    senderName={
+                                        isOwn
+                                            ? "You"
+                                            : msg.userName || msg.name
                                     }
-                                    isOwn={
-                                        msg.userId === userDetails.id
-                                    }
+                                    status={msg.status || "sent"}
+                                    createdAt={msg.sent}
+                                    isOwn={isOwn}
                                 />
-                            )
-                        )}
+                            );
 
+                        })}
                     </div>
-
                     <MessageInput
                         selectedChat={selectedChat}
                     />
