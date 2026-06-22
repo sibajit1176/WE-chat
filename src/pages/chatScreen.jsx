@@ -142,10 +142,10 @@ const ChatScreen = () => {
                 />
 
                 <section className="flex-1 flex flex-col">
-
-                    <ChatHeader
-                        selectedChat={selectedChat}
-                    />
+                    {selectedChat &&
+                        <ChatHeader
+                            selectedChat={selectedChat}
+                        />}
 
                     <div
                         ref={messagesContainerRef}
@@ -167,14 +167,18 @@ const ChatScreen = () => {
                                     status={msg.status || "sent"}
                                     createdAt={msg.sent}
                                     isOwn={isOwn}
+                                    messageType={msg.messageType}
+                                    fileUrl={msg.fileUrl}
+                                    chatType={selectedChat.chatType}
                                 />
                             );
 
                         })}
-                    </div>
-                    <MessageInput
-                        selectedChat={selectedChat}
-                    />
+                    </div>{
+                        selectedChat &&
+                        <MessageInput
+                            selectedChat={selectedChat}
+                        />}
 
                 </section>
 

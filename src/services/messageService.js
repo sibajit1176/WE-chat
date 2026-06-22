@@ -16,14 +16,22 @@ export const getMessage = async (chatId) => {
     return res.data;
 };
 
-export const sendMessage=async(payload)=>{
+export const uploadFile = async (formData) => {
+
     if (!token) {
         throw new Error("Token not found");
     }
-    const res=await api.post('sendMessage',payload,{
-        headers: {
-            Authorization: `Bearer ${token}`
+
+    const res = await api.post(
+        "/uploadFile",
+        formData,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "multipart/form-data"
+            }
         }
-    })
-    return res.data
-}
+    );
+
+    return res.data;
+};
