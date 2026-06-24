@@ -1,14 +1,19 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { getMessage, uploadFile } from '../services/messageService';
 import { toast } from 'react-toastify';
 import { socket } from '../socket/socket';
+import { predictiveTyping } from '../services/aiService';
+import PredictiveSuggestions from './PredictiveSuggestions';
+import debounce from "lodash/debounce";
+import SmartReplies from './SmartReplies';
 
-const MessageInput = ({ selectedChat }) => {
+const MessageInput = ({ selectedChat, smartReplies, clearReplies }) => {
 
     const [message, setMessage] = useState('');
     const [file, setFile] = useState(null);
     const [fileDetails, setFileDetails] = useState(null)
     const [uploading, setUploading] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
 
     const fileInputRef = useRef()
 
@@ -30,7 +35,7 @@ const MessageInput = ({ selectedChat }) => {
             "send-message",
             {
                 chatId: selectedChat.chatId,
-                message: message.trim()||null,
+                message: message.trim() || null,
                 fileUrl: fileDetails?.fileUrl || null,
                 messageType: fileDetails?.messageType || "text"
             },
@@ -44,6 +49,8 @@ const MessageInput = ({ selectedChat }) => {
                 setMessage("");
                 setFile(null);
                 setFileDetails(null);
+                setMessage("");
+                clearReplies();
                 if (fileInputRef.current) {
                     fileInputRef.current.value = "";
                 }
@@ -86,27 +93,56 @@ const MessageInput = ({ selectedChat }) => {
 
     };
 
+    // const handleChange = (e) => {
+    //     setMessage(e.target.value);
 
-
-    const handleChange = (e) => {
-        setMessage(e.target.value);
-
-        if (selectedChat) {
-            socket.emit("typing", selectedChat.chatId);
-        }
-    };
+    //     if (selectedChat) {
+    //         socket.emit("typing", selectedChat.chatId);
+    //     }
+    // };
     const removeFile = () => {
 
         setFile(null);
 
         setFileDetails(null);
-
+        setSuggestions([]);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
 
     };
+    const handleChange = (e) => {
 
+        const value = e.target.value;
+
+        setMessage(value);
+
+        if (selectedChat) {
+            socket.emit("typing", selectedChat.chatId);
+        }
+
+        if (uploading) return;
+
+        if (value.trim().length < 3) {
+            setSuggestions([]);
+            return;
+        }
+
+        fetchSuggestions(value);
+
+    };
+    const fetchSuggestions = useMemo(
+        () =>
+            debounce(async (value) => {
+                try {
+                    const res = await predictiveTyping(value);
+                    setSuggestions(res.data);
+                } catch (err) {
+                    console.log(err);
+                }
+            }, 500),
+        []
+    );
     return (
         <div className="border-t border-blue-500/30 p-4">
             {file && (
@@ -142,7 +178,20 @@ const MessageInput = ({ selectedChat }) => {
                 </div>
 
             )}
-
+            <PredictiveSuggestions
+                suggestions={suggestions}
+                onSelect={(text) => {
+                    setMessage(prev => prev ? `${prev} ${text}` : text);
+                    setSuggestions([]);
+                }}
+            />
+            <SmartReplies
+                replies={smartReplies}
+                onSelect={(text) => {
+                    setMessage(text);
+                    clearReplies();
+                }}
+            />
             <form
                 className="flex gap-3"
                 onSubmit={handleSend}

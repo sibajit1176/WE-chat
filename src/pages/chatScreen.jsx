@@ -9,6 +9,7 @@ import { getMessage } from '../services/messageService';
 import { getUserDetails } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from '../components/ProfileModal';
+import { smartReplies } from '../services/aiService';
 
 const ChatScreen = () => {
     const navigate = useNavigate()
@@ -17,6 +18,7 @@ const ChatScreen = () => {
     const [messages, setMessages] = useState([]);
     const [userDetails, setUserDetails] = useState({})
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [smartReplySuggestions, setSmartReplySuggestions] = useState([]);
 
     useEffect(() => {
         socket.auth = {
@@ -103,6 +105,28 @@ const ChatScreen = () => {
 
         }
     }
+    const handleReceiveMessage = async (newMessage) => {
+
+        if (newMessage.chatId !== selectedChat?.chatId) return;
+
+        setMessages(prev => [...prev, newMessage]);
+
+        // Don't generate replies for your own messages
+        if (newMessage.userId === userDetails.id) return;
+
+        try {
+
+            const res = await smartReplies(newMessage.message);
+
+            setSmartReplySuggestions(res.data);
+
+        } catch (err) {
+
+            console.log(err);
+
+        }
+
+    };
 
 
 
@@ -179,6 +203,8 @@ const ChatScreen = () => {
                         selectedChat &&
                         <MessageInput
                             selectedChat={selectedChat}
+                            smartReplies={smartReplySuggestions}
+                            clearReplies={() => setSmartReplySuggestions([])}
                         />}
 
                 </section>
