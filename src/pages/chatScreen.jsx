@@ -174,7 +174,8 @@ const ChatScreen = () => {
                             );
 
                         })}
-                    </div>{
+                    </div>
+                    {
                         selectedChat &&
                         <MessageInput
                             selectedChat={selectedChat}

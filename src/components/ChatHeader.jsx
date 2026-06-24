@@ -28,6 +28,31 @@ const ChatHeader = ({ selectedChat }) => {
     useEffect(() => {
         setIsTyping(false)
     }, [selectedChat])
+    const formatLastSeen = (date) => {
+        if (!date) return "Offline";
+
+        const last = new Date(date);
+        const now = new Date();
+
+        const diff = now - last;
+
+        if (diff < 60000) {
+            return "Last seen just now";
+        }
+
+        if (diff < 3600000) {
+            return `Last seen ${Math.floor(diff / 60000)} min ago`;
+        }
+
+        if (now.toDateString() === last.toDateString()) {
+            return `Last seen ${last.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+            })}`;
+        }
+
+        return `Last seen ${last.toLocaleDateString("en-GB")}`;
+    };
 
 
 
@@ -56,12 +81,15 @@ const ChatHeader = ({ selectedChat }) => {
                     <p className="text-blue-400 text-xs animate-pulse">
                         Typing...
                     </p>
-                ) : (
+                ) : selectedChat?.isOnline ? (
                     <p className="text-green-400 text-xs">
                         Online
                     </p>
+                ) : (
+                    <p className="text-gray-400 text-xs">
+                        {formatLastSeen(selectedChat?.lastSeen)}
+                    </p>
                 )}
-
             </div>
 
         </div>
