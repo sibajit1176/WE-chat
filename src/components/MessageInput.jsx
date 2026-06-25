@@ -136,7 +136,7 @@ const MessageInput = ({ selectedChat, smartReplies, clearReplies }) => {
             debounce(async (value) => {
                 try {
                     const res = await predictiveTyping(value);
-                    setSuggestions(res.data);
+                    setSuggestions(res.data || []);
                 } catch (err) {
                     console.log(err);
                 }
